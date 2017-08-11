@@ -8,5 +8,8 @@ The connectivity testing is mostly useful for servers because servers are most l
 Prerequesite:<br>
 Needs Active Directory tools installed on computer in order to load the Active Directory powershell module
 
+Update:<br>
+Fixed the NULL \ Empty DNSHostName field issue by replacing it with a combination of Get-ADDomain and the Name field in the Get-ADComputer to make the FQDN instead of depending on the DNSHostName field from Get-ADComputer
+
 Shout out:<br>
 Thanks to Pierre-Alexandre Braeken.  His PowerMemory script is what inspired making this script and making it as interactive as possible.
