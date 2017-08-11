@@ -3,19 +3,13 @@
 # Rev:3.0
 # 1.0 First Draft
 # 2.0 OutputFile Prompt
-# 3.0 OS choise Prompt
+# 3.0 Work in Progress - OS choise Prompt
+# 3.1 Fixed the DNSHostName NULL\Empty value issue
 #
 #= = = = = = = = = = = = = =_S_H_O_U_T__O_U_T_= = = = = = = = = = = = = = = =#
 # Shout out \ Credit to Pierre-Alexandre Braeken for his PowerMemory script  #
 # function Stop-Script was borrowed from Pierre-Alexandre Braeken            #
 # The command switch () I discovered from Pierre-Alexandre Braeken           #
-###############################################################################
-#
-#= = = = = = = = = = = = = =_K_N_O_W_N___B_U_G_= = = = = = = = = = = = =#
-# If the DNSHostName returns a NULL or Empty value,                     #
-#   you will get the error "Test-Connection : Cannot validate argument  #
-#   on parameter 'ComputerName'. The argument is null or empty."  I'll  #
-#   find a way to validate it some other time.                          #
 ###############################################################################
 
 ## NULL Variables #############################################################
@@ -29,13 +23,14 @@ $OutputFileTest = $null
 $Exit = $null
 $CheckFile = $null
 $FileOverWrite = $null
+$ADDomain = $null
+$FQDN = $null
 
 ## Functions #################################################################
 
 function Stop-Script () {
     "Script terminating..."
     Write-Output "============================================================"
-    Start-Sleep -s 5
     Exit
 }
 
@@ -72,7 +67,7 @@ switch ($QueryType){
     "9" {$QueryType = 9}
     "10" {$QueryType = 10}
     "0" {Stop-Script}
-        default {Write-Output "This option is invalid... Exiting..."; Start-Sleep -s 5; Stop-Script}
+        default {Write-Output "This option is invalid... Exiting...";Stop-Script}
 }
 
 IF ($QueryType -eq 1) {$OSQuery = "*XP*"}
@@ -105,22 +100,26 @@ $FileOverWrite = Read-Host "`nWould you like to continue? (Y\N)"
 switch ($FileOverWrite){
       "Y" {$FileOverWrite = "Y"}
       "N" {Stop-Script}
-           default {Write-Output "This option is invalid... Exiting..."; Start-Sleep -s 5; Stop-Script}
+           default {Write-Output "This option is invalid... Exiting...";Stop-Script}
 }
 
 IF ($FileOverWrite -eq "Y") {Remove-Item $OutputFile\QueryADComputers.txt}
 
 }
-## Query AD for all computer accounts which have 2003 in the Operating System field
-$Server = Get-ADComputer -f * -pr *| where {$_.OperatingSystem -like $OSQuery} | Select DNSHostName
+
+$ADDomain = Get-ADDomain
+
+## Query AD for all computer accounts which have a matching the desired Operating System
+$Server = Get-ADComputer -f * -pr *| where {$_.OperatingSystem -like $OSQuery} | Select Name
 
 ## Loop through each value in the $Server variable and test if connection is successfull.
 ## The -Quiet switch makes it a True\False statement
-ForEach ($Name in $Server) {$rtn = Test-Connection -CN $Name.DNSHostName -Count 1 -BufferSize 16 -Quiet
+ForEach ($Name in $Server) {$FQDN = $Name.Name + '.' + $ADDomain.Forest ;
+  $rtn = Test-Connection -CN $FQDN -Count 1 -BufferSize 16 -Quiet
 
 ## If the test connection is a success write\append to a file
 IF ($rtn -match 'True') {
-  Write-Output $Name.dnshostname | Out-File -Append $OutputFile\QueryADComputers.txt}
+  Write-Output $FQDN | Out-File -Append $OutputFile\QueryADComputers.txt}
 }
 
 ## Exit with style lol
